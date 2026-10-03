@@ -1,0 +1,19 @@
+---
+services:
+  house-finder:
+    build:
+      context: .
+      dockerfile: devops/Dockerfile
+      args:
+        STAGE: pro
+    command: watch
+    # Starts again with the Docker daemon, so it survives laptop reboots.
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOUSE_FINDER_DB__PATH: /data/house_finder.sqlite
+      # Idealista reads its anti-bot cookie from this Firefox profile (path from about:profiles), mounted read-only.
+      HOUSE_FINDER_IDEALISTA__FIREFOX_PROFILE: /firefox
+    volumes:
+      - ./data:/data
+      - /home/adrigrillo/snap/firefox/common/.mozilla/firefox/m6ydp5u4.default:/firefox:ro

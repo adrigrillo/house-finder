@@ -1,0 +1,31 @@
+# Python and packaging
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+
+# Tests and tools
+.cache/
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+reports/
+
+# Local configuration and secrets
+.env
+config/.secrets.toml
+config/settings.local.toml
+
+# Editors and operating systems
+.idea/
+.vscode/
+*~
+.DS_Store
+
+# Project output
+data/
+results/

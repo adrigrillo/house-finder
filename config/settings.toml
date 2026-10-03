@@ -1,0 +1,24 @@
+[logging]
+level = "INFO"
+
+[search]
+max_price = 800
+# Listings with at least this many rooms get a star in the notification.
+min_rooms = 2
+
+[db]
+path = "data/house_finder.sqlite"
+
+[watch]
+interval_minutes = 30
+
+[idealista]
+# Idealista is checked through the official API when idealista.api_key and api_secret are set (in .secrets.toml),
+# otherwise by scraping with the cookie of a Firefox profile that visits idealista.com now and then (path from
+# about:profiles). Every 8 hours keeps the API under its ~100 requests a month and the scraper off DataDome's radar.
+firefox_profile = ""
+interval_hours = 8
+
+[email]
+# Idealista alert emails are read over IMAP when email.user and email.password are set (in .secrets.toml).
+host = "imap.gmail.com"

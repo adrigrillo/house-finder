@@ -1,0 +1,62 @@
+[project]
+name = "house-finder"
+version = "0.1.0"
+description = "Watches Spanish rental portals and sends new listings to Telegram."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "curl-cffi>=0.16.3",
+    "dynaconf>=3.2.12",
+    "loguru>=0.7.3",
+    "typer>=0.24.1",
+]
+
+[project.scripts]
+house-finder = "house_finder.__main__:app"
+
+[dependency-groups]
+dev = [
+    "commitizen>=4.13.4",
+    "coverage[toml]>=7.14.1",
+    "pre-commit>=4.5.1",
+    "pytest>=9.0.2",
+    "ruff>=0.15.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/house_finder"]
+
+[tool.coverage.run]
+branch = true
+relative_files = true
+source = ["house_finder"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.format]
+quote-style = "single"
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_scheme = "semver2"
+version_provider = "pep621"
+update_changelog_on_bump = true
+changelog_incremental = true
+
+[tool.uv]
+# Rebuild the package when its code changes, not only pyproject.toml, or Docker builds reuse a stale cached wheel.
+cache-keys = [{ file = "pyproject.toml" }, { file = "src/**/*.py" }]
