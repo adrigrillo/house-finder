@@ -19,6 +19,7 @@ def get_validators() -> list[Validator]:
         Validator('idealista.api_key', default=None),
         Validator('idealista.api_secret', default=None),
         Validator('email.host', default='imap.gmail.com'),
+        Validator('email.interval_minutes', default=5, is_type_of=int, gte=1),
         Validator('email.user', default=None),
         Validator('email.password', default=None),
         Validator('telegram.token', default=None),

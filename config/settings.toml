@@ -22,3 +22,5 @@ interval_hours = 8
 [email]
 # Idealista alert emails are read over IMAP when email.user and email.password are set (in .secrets.toml).
 host = "imap.gmail.com"
+# Reading the inbox is cheap and never touches the portals, so it runs on its own, faster, interval.
+interval_minutes = 5

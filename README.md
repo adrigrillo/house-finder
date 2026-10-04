@@ -38,9 +38,9 @@ When Telegram says `blocked by DataDome`, open idealista.com in Firefox to refre
 **Alert emails.** Save the search in Idealista with email alerts on, then give the app read-only IMAP access to that
 inbox in `config/.secrets.toml` (`[email] user`, `password`) or `.env`. For Gmail, `password` must be an
 [app password](https://myaccount.google.com/apppasswords), and other providers need `email.host` in `settings.toml`.
-Every round it reads the last 3 days of emails from Idealista, never marking them as read, and sends the flats it has
-not seen. The price and rooms come from the email, so `search.max_price` filters alerts too and `search.min_rooms` stars
-them; the saved search can be wider than your budget.
+Every `email.interval_minutes` (5 by default, independent of `watch.interval_minutes`) it reads the last 3 days of emails
+from Idealista, never marking them as read, and sends the flats it has not seen. The price and rooms come from the email,
+so `search.max_price` filters alerts too and `search.min_rooms` stars them; the saved search can be wider than your budget.
 
 ## Telegram
 
@@ -58,7 +58,7 @@ docker compose up -d --build
 docker compose logs -f
 ```
 
-The container checks every 30 minutes and restarts with the Docker daemon. State is kept in `./data`.
+The container checks the portals every 30 minutes (the inbox every 5) and restarts with the Docker daemon. State is kept in `./data`.
 
 ## Run with uv
 

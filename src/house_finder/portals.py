@@ -224,6 +224,11 @@ def parse_idealista_api(page: str) -> list[Listing]:
     ]
 
 
+# uid -> body of the alert emails already downloaded, so a poll only fetches the new ones.
+# ponytail: in memory, a restart refetches the last 3 days once; UIDs are only stable while the mailbox's UIDVALIDITY is
+_email_bodies: dict[bytes, str] = {}
+
+
 def fetch_idealista_emails(host: str, user: str, password: str) -> str:
     """Return the bodies of the last few days of Idealista alert emails, without marking anything as read."""
     since = datetime.now(UTC) - timedelta(days=3)
@@ -235,16 +240,18 @@ def fetch_idealista_emails(host: str, user: str, password: str) -> str:
         except imaplib.IMAP4.error as error:
             raise PermissionError(f'email login failed: {error}') from error
         imap.select('INBOX', readonly=True)
-        _, found = imap.search(
-            None, 'FROM', '"idealista"', 'SINCE', f'{since.day}-{months[since.month - 1]}-{since.year}'
+        _, found = imap.uid(
+            'SEARCH', 'FROM', '"idealista"', 'SINCE', f'{since.day}-{months[since.month - 1]}-{since.year}'
         )
-        bodies = []
-        for number in found[0].split():
-            _, data = imap.fetch(number, '(BODY.PEEK[])')
-            body = email.message_from_bytes(data[0][1], policy=email.policy.default).get_body(('html', 'plain'))
-            if body:
-                bodies.append(body.get_content())
-    return '\n'.join(bodies)
+        uids = found[0].split()
+        for uid in uids:
+            if uid not in _email_bodies:
+                _, data = imap.uid('FETCH', uid, '(BODY.PEEK[])')
+                body = email.message_from_bytes(data[0][1], policy=email.policy.default).get_body(('html', 'plain'))
+                _email_bodies[uid] = body.get_content() if body else ''
+    for uid in _email_bodies.keys() - set(uids):  # older than the window
+        del _email_bodies[uid]
+    return '\n'.join(_email_bodies[uid] for uid in uids)
 
 
 def parse_idealista_email(text: str) -> list[Listing]:

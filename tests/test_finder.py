@@ -1,6 +1,7 @@
 import json
 import sqlite3
 from contextlib import closing
+from typing import ClassVar, Self
 
 import pytest
 
@@ -207,3 +208,36 @@ def test_parse_idealista_email_ignores_the_preview_line_before_the_first_flat() 
     assert portals.parse_idealista_email(text) == [
         Listing('idealista', '333', 'Nuevo anuncio en tu alerta', 750, 3, 'https://www.idealista.com/inmueble/333/')
     ]
+
+
+class FakeImap:
+    """Serves two emails by UID and counts the downloads."""
+
+    fetched: ClassVar[list[bytes]] = []
+
+    def __init__(self, host: str) -> None: ...
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *args: object) -> None: ...
+    def login(self, user: str, password: str) -> None: ...
+    def select(self, mailbox: str, readonly: bool) -> None: ...
+
+    def uid(self, command: str, *args: str) -> tuple[str, list]:
+        if command == 'SEARCH':
+            return 'OK', [b'7 9']
+        FakeImap.fetched.append(args[0])
+        return 'OK', [(b'', b'Content-Type: text/plain\n\nbody ' + args[0])]
+
+
+def test_fetch_idealista_emails_downloads_each_email_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(portals.imaplib, 'IMAP4_SSL', FakeImap)
+    monkeypatch.setattr(portals, '_email_bodies', {})
+    FakeImap.fetched.clear()
+
+    first = portals.fetch_idealista_emails('h', 'u', 'p')
+    second = portals.fetch_idealista_emails('h', 'u', 'p')
+
+    assert first == second
+    assert 'body 7' in first and 'body 9' in first
+    assert FakeImap.fetched == [b'7', b'9']
