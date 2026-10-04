@@ -32,8 +32,10 @@ class Listing:
 
 
 def fetch(url: str) -> str:
-    # Chrome's TLS fingerprint, because anti-bot layers (Milanuncios' Imperva) block Python's own.
-    response = requests.get(url, impersonate='chrome', timeout=30, headers={'Accept-Language': 'es-ES,es;q=0.9'})
+    # Safari's TLS fingerprint, because anti-bot layers (Milanuncios' Imperva) block Python's own and had flagged
+    # the Chrome and Firefox ones. The other portals answer identically either way.
+    # ponytail: one fingerprint for all portals, give a portal its own when Imperva flags this one as well
+    response = requests.get(url, impersonate='safari', timeout=30, headers={'Accept-Language': 'es-ES,es;q=0.9'})
     if 'Pardon Our Interruption' in response.text:
         raise PermissionError('blocked by Imperva anti-bot')
     response.raise_for_status()
