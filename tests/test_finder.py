@@ -71,6 +71,40 @@ def test_parse_pisos() -> None:
     ]
 
 
+def test_parse_gallegomartinez() -> None:
+    page = """
+    <div class="row lista-v thumbnails thumbnail-style">
+      <h3 class="title-list"><a href="ficha.php?id=3475&t=apartamento-en-el-centro">
+        Apartamento en el centro.   (Ref.: <strong>3948</strong>)</a></h3>
+      <ul class="resumen list"><li><strong>575&nbsp;&euro;/mes</strong></li><li>1&nbsp;Dormitorio</li></ul>
+    </div>
+    <div class="row lista-v thumbnails thumbnail-style">
+      <h3 class="title-list"><a href="ficha.php?id=13919&t=atico-en-alquiler">
+        Atico en alquiler   (Ref.: <strong>13919</strong>)</a></h3>
+      <ul class="resumen list"><li><strong>1.000&nbsp;&euro;/mes</strong></li><li>3&nbsp;Dormitorios</li></ul>
+    </div>
+    """
+
+    assert portals.parse_gallegomartinez(page) == [
+        Listing(
+            'gallegomartinez',
+            '3475',
+            'Apartamento en el centro.',
+            575,
+            1,
+            'https://www.gallegomartinez.com/ficha.php?id=3475&t=apartamento-en-el-centro',
+        ),
+        Listing(
+            'gallegomartinez',
+            '13919',
+            'Atico en alquiler',
+            1000,
+            3,
+            'https://www.gallegomartinez.com/ficha.php?id=13919&t=atico-en-alquiler',
+        ),
+    ]
+
+
 def test_run_once_filters_dedupes_and_retries_failed_sends(tmp_path, monkeypatch) -> None:
     listings = [
         Listing('p', '1', 'cheap 2 rooms', 700, 2, 'u1'),

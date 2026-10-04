@@ -9,6 +9,7 @@ limit and sends every new listing to Telegram. Listings with enough rooms get a 
 | Habitaclia | JSON embedded in the search page | URL ignores price, filtered in code |
 | Milanuncios | JSON embedded in the search page | Huesca city only (no comarca search); "busco piso" ads are skipped |
 | Pisos.com | Server-rendered HTML | |
+| Gallego Martínez | Server-rendered HTML | Huesca city agency; its price filter stops at 600 €, filtered in code |
 | Idealista | Official API, else your Firefox's DataDome cookie; plus alert emails | A few checks a day, see below |
 | Yaencontre | Not supported | DataDome blocks plain HTTP and automated browsers |
 

@@ -114,6 +114,28 @@ def parse_pisos(page: str) -> list[Listing]:
     return listings
 
 
+def parse_gallegomartinez(page: str) -> list[Listing]:
+    listings = []
+    # ponytail: regex over server-rendered HTML, switch to an HTML parser if the agency reshapes its markup
+    for block in page.split('class="row lista-v thumbnails thumbnail-style"')[1:]:
+        link = re.search(r'href="(ficha\.php\?id=(\d+)[^"]*)"', block)
+        text = html.unescape(block)  # &nbsp; between number and unit, &euro; for the sign
+        price = re.search(r'<li><strong>([\d.]+)\s*€', text)
+        rooms = re.search(r'<li>(\d+)\s*Dormitorio', text)  # one bedroom is "1 Dormitorio", not "Dormitorios"
+        title = re.search(r'title-list"><a[^>]*>\s*(.*?)\s*\(Ref', text, re.DOTALL)  # ends in "(Ref.: 3948)"
+        listings.append(
+            Listing(
+                portal='gallegomartinez',
+                id=link.group(2),
+                title=title.group(1).strip() if title else '',
+                price=int(price.group(1).replace('.', '')) if price else None,
+                rooms=int(rooms.group(1)) if rooms else None,
+                url='https://www.gallegomartinez.com/' + link.group(1),
+            )
+        )
+    return listings
+
+
 def firefox_cookies(profile: Path, domain: str) -> str:
     """Return a Cookie header with the cookies a Firefox profile holds for a domain."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -287,7 +309,8 @@ IDEALISTA_URL = 'https://www.idealista.com/alquiler-viviendas/huesca/hoya-de-hue
 
 # Search URLs cover the Hoya de Huesca comarca (Huesca city and its surroundings) and are sorted newest first where the
 # portal allows it, so page one holds every new listing in a market this size. Milanuncios has no comarca level, only
-# city or the whole province, so it stays on Huesca city. Habitaclia's URL has no price filter; the caller filters.
+# city or the whole province, so it stays on Huesca city. Habitaclia's URL has no price filter, and Gallego Martínez's
+# price filter is a POST form capped at 600 €; the caller filters both.
 Portal = tuple[str, Callable[[str], str], Callable[[str], list[Listing]]]
 
 PORTALS: dict[str, Portal] = {
@@ -307,4 +330,5 @@ PORTALS: dict[str, Portal] = {
         parse_milanuncios,
     ),
     'pisos': ('https://www.pisos.com/alquiler/pisos-hoya_de_huesca/hasta-{max_price}/', fetch, parse_pisos),
+    'gallegomartinez': ('https://www.gallegomartinez.com/alquilar-piso-huesca.php', fetch, parse_gallegomartinez),
 }
