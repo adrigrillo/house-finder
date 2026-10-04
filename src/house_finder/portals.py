@@ -88,7 +88,10 @@ def parse_milanuncios(page: str) -> list[Listing]:
             url='https://www.milanuncios.com' + ad['url'],
         )
         for ad in props['adListPagination']['adList']['ads']
-        if ad['sellType'] == 'supply'  # 'demand' ads are people looking for a flat
+        # 'demand' ads are people looking for a flat. Rentals are split across categories (pisos, estudios,
+        # apartamentos), so the search covers every home and this keeps the dwellings for rent, dropping sales and
+        # shared rooms, whose price is per room.
+        if ad['sellType'] == 'supply' and ad['category']['slug'].startswith('alquiler-de')
     ]
 
 
@@ -309,8 +312,9 @@ IDEALISTA_URL = 'https://www.idealista.com/alquiler-viviendas/huesca/hoya-de-hue
 
 # Search URLs cover the Hoya de Huesca comarca (Huesca city and its surroundings) and are sorted newest first where the
 # portal allows it, so page one holds every new listing in a market this size. Milanuncios has no comarca level, only
-# city or the whole province, so it stays on Huesca city. Habitaclia's URL has no price filter, and Gallego Martínez's
-# price filter is a POST form capped at 600 €; the caller filters both.
+# city or the whole province, so it stays on Huesca city, and it searches every home because a rental is filed under
+# its own category (a piso search misses the studios and apartments); Habitaclia's URL has no price filter, and
+# Gallego Martínez's price filter is a POST form capped at 600 €; the caller filters all three.
 Portal = tuple[str, Callable[[str], str], Callable[[str], list[Listing]]]
 
 PORTALS: dict[str, Portal] = {
@@ -325,7 +329,7 @@ PORTALS: dict[str, Portal] = {
         parse_habitaclia,
     ),
     'milanuncios': (
-        'https://www.milanuncios.com/alquiler-de-pisos-en-huesca-huesca/?hasta={max_price}&orden=date',
+        'https://www.milanuncios.com/viviendas-en-huesca-huesca/?hasta={max_price}&orden=date',
         fetch,
         parse_milanuncios,
     ),
