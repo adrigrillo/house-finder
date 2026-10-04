@@ -39,7 +39,8 @@ def test_parse_fotocasa() -> None:
 def test_parse_milanuncios_keeps_only_rentals() -> None:
     ad = {
         'id': 7,
-        'title': 'Piso',
+        'title': 'Huesca Capital',
+        'description': 'Ref: 000873. Avenida Danzantes\nPara estudiantes, cerca de la zona universitaria.',
         'price': {'cashPrice': {'value': 700}},
         'url': '/a-7.htm',
         'sellType': 'supply',
@@ -48,16 +49,41 @@ def test_parse_milanuncios_keeps_only_rentals() -> None:
     }
     ads = [
         ad,
-        {**ad, 'id': 8, 'title': 'Estudio', 'category': {'slug': 'alquiler-de-estudios'}, 'tags': []},
-        {**ad, 'id': 9, 'sellType': 'demand', 'tags': []},  # "busco piso"
+        {**ad, 'id': 8, 'description': 'x ' * 80, 'category': {'slug': 'alquiler-de-estudios'}, 'tags': []},
+        {**ad, 'id': 9, 'description': '', 'sellType': 'demand', 'tags': []},  # "busco piso"
         {**ad, 'id': 10, 'category': {'slug': 'venta-de-pisos'}},  # a flat for sale
         {**ad, 'id': 11, 'category': {'slug': 'pisos-compartidos'}},  # a room in a shared flat
     ]
     page = _initial_props({'adListPagination': {'adList': {'ads': ads}}})
 
     assert portals.parse_milanuncios(page) == [
-        Listing('milanuncios', '7', 'Piso', 700, 3, 'https://www.milanuncios.com/a-7.htm'),
-        Listing('milanuncios', '8', 'Estudio', 700, None, 'https://www.milanuncios.com/a-7.htm'),
+        Listing(
+            'milanuncios',
+            '7',
+            'Avenida Danzantes Para estudiantes, cerca de la zona universitaria.',
+            700,
+            3,
+            'https://www.milanuncios.com/a-7.htm',
+        ),
+        # cut on length, never mid-word
+        Listing('milanuncios', '8', 'x ' * 49 + 'x', 700, None, 'https://www.milanuncios.com/a-7.htm'),
+    ]
+
+
+def test_parse_milanuncios_falls_back_to_the_title_without_a_body() -> None:
+    ad = {
+        'id': 9,
+        'title': 'Centro - C. Coso Alto',
+        'description': None,
+        'sellType': 'supply',
+        'category': {'slug': 'alquiler-de-apartamentos'},
+        'price': {},
+        'tags': [],
+        'url': '/a-9.htm',
+    }
+
+    assert portals.parse_milanuncios(_initial_props({'adListPagination': {'adList': {'ads': [ad]}}})) == [
+        Listing('milanuncios', '9', 'Centro - C. Coso Alto', None, None, 'https://www.milanuncios.com/a-9.htm')
     ]
 
 

@@ -76,13 +76,21 @@ def parse_habitaclia(page: str) -> list[Listing]:
     ]
 
 
+def _milanuncios_title(ad: dict) -> str:
+    """Milanuncios titles are just "Huesca Capital", so the ad's own opening line stands in for the location."""
+    body = re.sub(r'\s+', ' ', ad['description'] or '')
+    body = re.sub(r'^Ref:\s*[^.]*\.\s*', '', body)  # the agency's own reference, e.g. "Ref: 000873."
+    # Agencies write without sentence breaks, so cut on length rather than on a full stop, but never mid-word.
+    return (body[:100].rsplit(' ', 1)[0] if len(body) > 100 else body) or ad['title']
+
+
 def parse_milanuncios(page: str) -> list[Listing]:
     props = _script_json(page, r'window\.__INITIAL_PROPS__\s*=\s*JSON\.parse\((".*?")\);')
     return [
         Listing(
             portal='milanuncios',
             id=str(ad['id']),
-            title=ad['title'],
+            title=_milanuncios_title(ad),
             price=ad['price'].get('cashPrice', {}).get('value'),
             rooms=next((int(t['text']) for t in ad['tags'] if t['type'] == 'dormitorios'), None),
             url='https://www.milanuncios.com' + ad['url'],
