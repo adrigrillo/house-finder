@@ -48,7 +48,7 @@ so `search.max_price` filters alerts too and `search.min_rooms` stars them; the 
 2. Send your new bot any message, open `https://api.telegram.org/bot<token>/getUpdates` and copy
    `result[0].message.chat.id`.
 3. To send the listings to more people, have each of them message the bot and put every chat id in `telegram.chat_id`
-   separated by commas. A chat that cannot be reached is logged and skipped; the listing counts as sent once any chat got it.
+   separated by commas. A chat that cannot be reached is logged and the message is retried every tick for a day; the other chats are not delayed.
 
 ## Run with Docker
 
