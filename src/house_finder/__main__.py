@@ -30,11 +30,31 @@ def main() -> None:
     configure_logs()
 
 
+def recipients(raw: str | list | int) -> list[str]:
+    """Read one or many chat ids from a comma or space separated setting."""
+    if isinstance(raw, list):
+        return [str(chat_id) for chat_id in raw]
+    return [chat_id for chat_id in str(raw).replace(',', ' ').split() if chat_id]
+
+
+def notify_all(token: str, chat_ids: list[str], text: str) -> None:
+    failed = 0
+    for chat_id in chat_ids:
+        try:
+            send_telegram(token, chat_id, text)
+        except Exception as error:  # noqa: BLE001 - one chat that cannot be reached must not stop the others
+            logger.error(f'telegram {chat_id}: {error!r}')
+            failed += 1
+    if failed == len(chat_ids):
+        raise RuntimeError(f'telegram: none of {chat_ids} accepted the message')  # so run_once retries the listing
+
+
 def _check(dry_run: bool, with_idealista: bool) -> None:
+    chats = recipients(settings.telegram.chat_id or '')
     if dry_run:
         notify = typer.echo
-    elif settings.telegram.token and settings.telegram.chat_id:
-        notify = partial(send_telegram, settings.telegram.token, str(settings.telegram.chat_id))
+    elif settings.telegram.token and chats:
+        notify = partial(notify_all, settings.telegram.token, chats)
     else:
         raise typer.BadParameter('Set telegram.token and telegram.chat_id, or pass --dry-run.')
     portals: dict[str, Portal] = dict(PORTALS)

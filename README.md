@@ -46,6 +46,8 @@ not seen. Alerts carry no price in the message because the saved search already 
 1. Talk to [@BotFather](https://t.me/BotFather), run `/newbot` and keep the token.
 2. Send your new bot any message, open `https://api.telegram.org/bot<token>/getUpdates` and copy
    `result[0].message.chat.id`.
+3. To send the listings to more people, have each of them message the bot and put every chat id in `telegram.chat_id`
+   separated by commas. A chat that cannot be reached is logged and skipped; the listing counts as sent once any chat got it.
 
 ## Run with Docker
 
