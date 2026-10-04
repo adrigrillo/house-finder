@@ -149,6 +149,26 @@ def parse_gallegomartinez(page: str) -> list[Listing]:
     return listings
 
 
+def parse_montearagon(page: str) -> list[Listing]:
+    listings = []
+    # ponytail: regex over the markup the search returns, switch to an HTML parser if the agency swaps its theme
+    for block in page.split('<div class="listing grid-view')[1:]:
+        head = re.search(r'listing-title"><a href="([^"]+)">([^<]*)</a>', block)
+        price = re.search(r'listing-price">\s*([\d.]+)', block)  # "700€", "1.300€"
+        rooms = re.search(r'icon-bed">\s*(\d+)', block)  # the word after the count varies ("dormitorios", "bedroom")
+        listings.append(
+            Listing(
+                portal='fincasmontearagon',
+                id=re.search(r'data-id="(\d+)"', block).group(1),  # the WordPress post id
+                title=html.unescape(head.group(2)),
+                price=int(price.group(1).replace('.', '')) if price else None,
+                rooms=int(rooms.group(1)) if rooms else None,
+                url=head.group(1),  # already absolute
+            )
+        )
+    return listings
+
+
 def firefox_cookies(profile: Path, domain: str) -> str:
     """Return a Cookie header with the cookies a Firefox profile holds for a domain."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -315,6 +335,49 @@ def parse_idealista_email(text: str) -> list[Listing]:
     return listings
 
 
+MONTEARAGON_URL = 'http://fincasmontearagon.com/home/browse-listings/'
+MONTEARAGON_AJAX = 'http://fincasmontearagon.com/wp-admin/admin-ajax.php'
+# The agency also rents out garages, plots, shops and offices, and a rented office can count bedrooms, so the rooms
+# filter does not exclude them. Asking by type does, one home type at a time because the filter takes a single value.
+# Its flats are filed as apartments too, but always alongside a piso, so asking for that type only costs pages.
+MONTEARAGON_TYPES = ('piso', 'casa')
+
+
+def fetch_montearagon(url: str) -> str:
+    """Return the agency's rentals. Its own search is AJAX-only, so this asks its endpoint for every page of each type."""
+    # That endpoint checks a nonce that only the page itself carries, and no listing URL holds one.
+    nonce = re.search(r'"ajaxNonce":"(\w+)"', fetch(url)).group(1)
+    # ponytail: walks the whole rental stock every tick (5 pages today); stop paging if the agency list grows a lot
+    pages = []
+    for listing_type in MONTEARAGON_TYPES:
+        page = 1
+        while True:
+            response = requests.post(
+                MONTEARAGON_AJAX,
+                data={
+                    'action': 'listing_search',
+                    '_ajax_nonce': nonce,
+                    '_ref': 'browser',
+                    'paged': page,
+                    'status': 'for-rent',
+                    'listing_type': listing_type,
+                    'dview': 'grid',
+                    'pview': 'results',
+                },
+                impersonate='safari',
+                timeout=30,
+                headers={'Accept-Language': 'es-ES,es;q=0.9'},
+            )
+            response.raise_for_status()
+            pages.append(response.text)
+            # The last page of a type advertises no "load more" link; an empty one ends it too, so a reshaped page
+            # cannot spin this.
+            if 'data-pagination' not in response.text or 'data-id=' not in response.text:
+                break
+            page += 1
+    return '\n'.join(pages)
+
+
 # Cheapest first instead of a price filter: page one (30 flats) covers everything under budget in a market this size,
 # and the caller drops the rest.
 # ponytail: breaks once Hoya de Huesca passes 30 rentals, then switch to a newest-first sort
@@ -324,7 +387,9 @@ IDEALISTA_URL = 'https://www.idealista.com/alquiler-viviendas/huesca/hoya-de-hue
 # portal allows it, so page one holds every new listing in a market this size. Milanuncios has no comarca level, only
 # city or the whole province, so it stays on Huesca city, and it searches every home because a rental is filed under
 # its own category (a piso search misses the studios and apartments); Habitaclia's URL has no price filter, and
-# Gallego Martínez's price filter is a POST form capped at 600 €; the caller filters all three.
+# Gallego Martínez's price filter is a POST form capped at 600 €; the caller filters all three. Fincas Montearagon has
+# no comarca level either, but its WordPress search is AJAX-only, paginated and takes one property type at a time, so
+# its fetcher asks the endpoint for every page of every home type, which is what keeps its offices and shops out.
 Portal = tuple[str, Callable[[str], str], Callable[[str], list[Listing]]]
 
 PORTALS: dict[str, Portal] = {
@@ -345,4 +410,5 @@ PORTALS: dict[str, Portal] = {
     ),
     'pisos': ('https://www.pisos.com/alquiler/pisos-hoya_de_huesca/hasta-{max_price}/', fetch, parse_pisos),
     'gallegomartinez': ('https://www.gallegomartinez.com/alquilar-piso-huesca.php', fetch, parse_gallegomartinez),
+    'fincasmontearagon': (MONTEARAGON_URL, fetch_montearagon, parse_montearagon),
 }

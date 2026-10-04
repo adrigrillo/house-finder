@@ -10,7 +10,7 @@ limit and sends every new listing to Telegram. Listings with enough rooms get a 
 | Milanuncios | JSON embedded in the search page | Huesca city only (no comarca search); searches every home and keeps only dwellings for rent, so sales, "busco piso" ads and shared rooms are skipped |
 | Pisos.com | Server-rendered HTML | |
 | Gallego Martínez | Server-rendered HTML | Huesca city agency; its price filter stops at 600 €, filtered in code |
-| Rentola | JSON-LD in the search page | Whole province of Huesca, no comarca level; republishes other portals' flats, so those arrive twice |
+| Fincas Montearagon | WordPress' AJAX search endpoint, every page | Huesca agency; its search takes one property type at a time, so all three home types are asked for, which keeps the offices, shops, garages and plots it also rents out out |
 | Idealista | Official API, else your Firefox's DataDome cookie; plus alert emails | A few checks a day, see below |
 | Yaencontre | Not supported | DataDome blocks plain HTTP and automated browsers |
 

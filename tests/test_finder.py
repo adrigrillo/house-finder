@@ -143,6 +143,40 @@ def test_parse_gallegomartinez() -> None:
     ]
 
 
+def test_parse_montearagon() -> None:
+    page = """
+    <div class="listing grid-view span3 listing-status-for-rent" data-id="873">
+      <h3 class="listing-title"><a href="http://fincasmontearagon.com/listings/c-agustin-de-carrera-no-3/">C/ Agustín de Carrera, nº 3</a></h3>
+      <div class="listing-price">700&euro;<span class="price-per"> / mes</span></div>
+      <li class="listing-detail icon-text icon-bed">3 <span class="detail"> dormitorios</span></li>
+    </div>
+    <div class="listing grid-view span3 listing-status-for-rent" data-id="3970">
+      <h3 class="listing-title"><a href="http://fincasmontearagon.com/listings/hostal-en-riglos/">Hostal en Riglos &amp; m&aacute;s</a></h3>
+      <div class="listing-price">1.300&euro;</div>
+      <li class="listing-detail icon-text icon-bed">5 <span class="detail"> bedroom</span></li>
+    </div>
+    """
+
+    assert portals.parse_montearagon(page) == [
+        Listing(
+            'fincasmontearagon',
+            '873',
+            'C/ Agustín de Carrera, nº 3',
+            700,
+            3,
+            'http://fincasmontearagon.com/listings/c-agustin-de-carrera-no-3/',
+        ),
+        Listing(
+            'fincasmontearagon',
+            '3970',
+            'Hostal en Riglos & más',  # thousands separator dropped, entities decoded
+            1300,
+            5,
+            'http://fincasmontearagon.com/listings/hostal-en-riglos/',
+        ),
+    ]
+
+
 def test_run_once_filters_dedupes_and_retries_failed_sends(tmp_path, monkeypatch) -> None:
     listings = [
         Listing('p', '1', 'cheap 2 rooms', 700, 2, 'u1'),
