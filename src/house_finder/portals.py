@@ -249,13 +249,28 @@ def fetch_idealista_emails(host: str, user: str, password: str) -> str:
 
 def parse_idealista_email(text: str) -> list[Listing]:
     # Alert links may be wrapped in click-tracking redirects, which carry the real URL percent-encoded.
-    # ponytail: ids only, the alert's saved search already filters price and area; parse price and rooms once a real
-    # alert email shows their markup
-    ids = dict.fromkeys(re.findall(r'idealista\.com/inmueble/(\d+)', unquote(html.unescape(text))))
-    return [
-        Listing('idealista', id, 'Nuevo anuncio en tu alerta', None, None, f'https://www.idealista.com/inmueble/{id}/')
-        for id in ids
-    ]
+    # An alert has one block per flat: its links, then "750 €/mes" and "3 hab.". Each id owns the text after its links,
+    # up to the next flat's, so the price, rooms and title come from there; a digest without them leaves them unknown.
+    parts = re.split(r'idealista\.com/inmueble/(\d+)', unquote(html.unescape(text)))
+    blocks: dict[str, str] = {}
+    for id, chunk in zip(parts[1::2], parts[2::2], strict=True):
+        blocks[id] = blocks.get(id, '') + chunk
+    listings = []
+    for id, block in blocks.items():
+        price = re.search(r'(\d[\d.]*)\s*€', block)
+        rooms = re.search(r'(\d+)\s*hab', block)
+        title = re.search(r'title="([^"]+)"', block)
+        listings.append(
+            Listing(
+                'idealista',
+                id,
+                title[1] if title else 'Nuevo anuncio en tu alerta',
+                int(price[1].replace('.', '')) if price else None,
+                int(rooms[1]) if rooms else None,
+                f'https://www.idealista.com/inmueble/{id}/',
+            )
+        )
+    return listings
 
 
 # Cheapest first instead of a price filter: page one (30 flats) covers everything under budget in a market this size,

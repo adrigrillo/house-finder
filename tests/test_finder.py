@@ -176,3 +176,34 @@ def test_parse_idealista_email_reads_plain_and_tracked_links_once() -> None:
     """
 
     assert [listing.id for listing in portals.parse_idealista_email(text)] == ['111', '222']
+
+
+def test_parse_idealista_email_reads_price_rooms_and_title_per_flat() -> None:
+    text = """
+    <a href="https://www.idealista.com/inmueble/111/?utm=1"><img title="Piso en Calle Mayor, Huesca"></a>
+    <a href="https://www.idealista.com/inmueble/111/?utm=2">Ver fotos</a>
+    <div>1.050 &euro;/mes</div><div>3 hab.   77 m&sup2;</div>
+    <a href="https://www.idealista.com/inmueble/111/?utm=3">Contactar</a>
+    <a href="https://click.idealista.com/c?u=https%3A%2F%2Fwww.idealista.com%2Finmueble%2F222%2F"><img title="Estudio"></a>
+    <div>600 &euro;/mes</div>
+    """
+
+    assert portals.parse_idealista_email(text) == [
+        Listing('idealista', '111', 'Piso en Calle Mayor, Huesca', 1050, 3, 'https://www.idealista.com/inmueble/111/'),
+        Listing('idealista', '222', 'Estudio', 600, None, 'https://www.idealista.com/inmueble/222/'),
+    ]
+
+
+def test_parse_idealista_email_ignores_the_preview_line_before_the_first_flat() -> None:
+    # Real alerts open with a hidden preview of the flat ("title 750 €/mes") before any link, and end with a footer.
+    text = """
+    <div style="display:none">Piso en Plaza Cervantes, 8 750 &euro;/mes . Piso en alquiler</div>
+    <a href="https://www.idealista.com/inmueble/333/?utm_link=propertyNewPhoto" target="_blank">Ver 6 fotos</a>
+    <p>Piso en Plaza Cervantes, 8, Santiago, Huesca</p><p>750 &euro;/mes</p><p>3 hab. 77 m&sup2;</p>
+    <a href="https://www.idealista.com/inmueble/333/?utm_link=propertyNewContact">Contactar</a>
+    <p>Ver todos los anuncios de Cerca de Huesca</p>
+    """
+
+    assert portals.parse_idealista_email(text) == [
+        Listing('idealista', '333', 'Nuevo anuncio en tu alerta', 750, 3, 'https://www.idealista.com/inmueble/333/')
+    ]

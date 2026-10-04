@@ -39,7 +39,8 @@ When Telegram says `blocked by DataDome`, open idealista.com in Firefox to refre
 inbox in `config/.secrets.toml` (`[email] user`, `password`) or `.env`. For Gmail, `password` must be an
 [app password](https://myaccount.google.com/apppasswords), and other providers need `email.host` in `settings.toml`.
 Every round it reads the last 3 days of emails from Idealista, never marking them as read, and sends the flats it has
-not seen. Alerts carry no price in the message because the saved search already filters by price.
+not seen. The price and rooms come from the email, so `search.max_price` filters alerts too and `search.min_rooms` stars
+them; the saved search can be wider than your budget.
 
 ## Telegram
 

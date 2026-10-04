@@ -53,7 +53,7 @@ def run_once(
                 db.commit()
             logger.info(f'{name}: {len(listings)} listings')
             for listing in listings:
-                # Unknown prices pass: email alerts carry none and their saved search already filters by price.
+                # Unknown prices pass: an alert email whose markup has no price must not be dropped.
                 if listing.price and listing.price > max_price:
                     logger.debug(f'{name}: skipped, over budget: {listing}')
                     continue
