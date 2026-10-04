@@ -9,7 +9,6 @@ dist/
 # Tests and tools
 .cache/
 .coverage
-coverage.xml
 htmlcov/
 .pytest_cache/
 .ruff_cache/
@@ -28,4 +27,3 @@ config/settings.local.toml
 
 # Project output
 data/
-results/

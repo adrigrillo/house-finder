@@ -1,4 +1,3 @@
-ARG STAGE="dev"
 ARG DEBIAN_CODENAME="trixie"
 ARG BUILD_BASE="debian:${DEBIAN_CODENAME}"
 ARG RUNTIME_BASE="debian:${DEBIAN_CODENAME}-slim"
@@ -6,23 +5,15 @@ ARG APP_HOME="/opt/project"
 ARG VIRTUAL_ENV="/opt/.venv"
 ARG PYTHON_INSTALL_PATH="/usr/local/bin/uv-python"
 
-ARG UV_VERSION="0.11.19"
+ARG UV_VERSION="0.12.23"
 ARG UV_BASE="ghcr.io/astral-sh/uv:${UV_VERSION}"
 FROM ${UV_BASE} AS uv-image
 
-FROM ${BUILD_BASE} AS dev-builder
-ENV UV_ARGS=""
-
-FROM ${BUILD_BASE} AS pro-builder
-ENV UV_ARGS="--no-dev --no-editable"
-
-FROM ${STAGE}-builder AS builder
+FROM ${BUILD_BASE} AS builder
 
 ARG APP_HOME
 ARG VIRTUAL_ENV
 ARG PYTHON_INSTALL_PATH
-ARG GROUP_DEPENDENCIES
-ARG EXTRA_DEPENDENCIES
 
 ENV DEBIAN_FRONTEND=noninteractive \
     UV_COMPILE_BYTECODE=0 \
@@ -33,7 +24,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 WORKDIR ${APP_HOME}
 
-# hadolint ignore=SC2086
 RUN --mount=from=uv-image,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
@@ -42,9 +32,9 @@ RUN --mount=from=uv-image,source=/uv,target=/bin/uv \
     --mount=type=bind,source=README.md,target=README.md \
     --mount=type=bind,source=src,target=src \
     uv venv ${VIRTUAL_ENV} && \
-    uv sync --locked ${UV_ARGS} ${GROUP_DEPENDENCIES} ${EXTRA_DEPENDENCIES}
+    uv sync --locked --no-dev --no-editable
 
-FROM ${RUNTIME_BASE} AS runtime-base
+FROM ${RUNTIME_BASE} AS runtime
 
 ARG APP_HOME
 ARG VIRTUAL_ENV
@@ -55,7 +45,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 
 COPY --from=builder --chmod=755 ${PYTHON_INSTALL_PATH} ${PYTHON_INSTALL_PATH}
 COPY --from=builder --chmod=755 ${VIRTUAL_ENV} ${VIRTUAL_ENV}
-COPY --chmod=755 .bin/runtime_host_user_entrypoint.sh ${APP_HOME}/.bin/runtime_host_user_entrypoint.sh
 COPY config/settings.toml ${APP_HOME}/config/settings.toml
 
 ENV PYTHONUNBUFFERED=1 \
@@ -63,9 +52,5 @@ ENV PYTHONUNBUFFERED=1 \
     PATH=${VIRTUAL_ENV}/bin:${PATH}
 
 WORKDIR ${APP_HOME}
-
-FROM runtime-base AS dev-runtime
-FROM runtime-base AS pro-runtime
-FROM ${STAGE}-runtime AS runtime
 
 ENTRYPOINT ["house-finder"]

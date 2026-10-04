@@ -1,11 +1,12 @@
 ---
+# Pins the container and network names, so they don't follow the directory this was cloned into.
+name: house-finder
+
 services:
   house-finder:
     build:
       context: .
       dockerfile: devops/Dockerfile
-      args:
-        STAGE: pro
     command: watch
     # Starts again with the Docker daemon, so it survives laptop reboots.
     restart: unless-stopped
@@ -16,4 +17,7 @@ services:
       HOUSE_FINDER_IDEALISTA__FIREFOX_PROFILE: /firefox
     volumes:
       - ./data:/data
-      - /home/adrigrillo/snap/firefox/common/.mozilla/firefox/m6ydp5u4.default:/firefox:ro
+      # Idealista's anti-bot cookie. FIREFOX_PROFILE is the "Root Directory" of the profile in Firefox's
+      # about:profiles, which visits idealista.com now and then. Unset, the mount is empty and only the Idealista
+      # API and the alert emails work.
+      - ${FIREFOX_PROFILE:-/firefox}:/firefox:ro

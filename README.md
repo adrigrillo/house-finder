@@ -10,6 +10,7 @@ limit and sends every new listing to Telegram. Listings with enough rooms get a 
 | Milanuncios | JSON embedded in the search page | Huesca city only (no comarca search); searches every home and keeps only dwellings for rent, so sales, "busco piso" ads and shared rooms are skipped |
 | Pisos.com | Server-rendered HTML | |
 | Gallego Martínez | Server-rendered HTML | Huesca city agency; its price filter stops at 600 €, filtered in code |
+| Rentola | JSON-LD in the search page | Whole province of Huesca, no comarca level; republishes other portals' flats, so those arrive twice |
 | Idealista | Official API, else your Firefox's DataDome cookie; plus alert emails | A few checks a day, see below |
 | Yaencontre | Not supported | DataDome blocks plain HTTP and automated browsers |
 
@@ -32,7 +33,8 @@ fingerprint and language).
 
 1. Open idealista.com in Firefox once, so the cookie exists.
 2. Find the profile folder in Firefox's `about:profiles` ("Root Directory").
-3. Set it as `idealista.firefox_profile` in `config/settings.local.toml`, or mount it in `compose.yaml` for Docker.
+3. Set it as `idealista.firefox_profile` in `config/settings.local.toml`, or as `FIREFOX_PROFILE` in `.env` for
+   Docker, which mounts that path into the container.
 
 When Telegram says `blocked by DataDome`, open idealista.com in Firefox to refresh the cookie.
 
@@ -54,20 +56,23 @@ so `search.max_price` filters alerts too and `search.min_rooms` stars them; the 
 ## Run with Docker
 
 ```bash
-cp .env.example .env   # fill in the token and chat id
-docker compose up -d --build
-docker compose logs -f
+cp .env.example .env   # fill in the token, the chat id and FIREFOX_PROFILE
+make up                 # docker compose up -d --build
+make logs               # docker compose logs -f
+make down               # docker compose down
 ```
 
-The container checks the portals every 30 minutes (the inbox every 5) and restarts with the Docker daemon. State is kept in `./data`.
+The container checks the portals every 30 minutes (the inbox every 5) and restarts with the Docker daemon. State is
+kept in `./data`. `FIREFOX_PROFILE` in `.env` is the Firefox profile mounted into it; leave it empty and only the
+Idealista API and the alert emails work.
 
 ## Run with uv
 
 ```bash
-uv sync
+make sync
 cp config/.secrets.toml.example config/.secrets.toml   # fill in the token and chat id
-uv run house-finder check --dry-run   # print new listings instead of sending them
-uv run house-finder watch             # check forever
+make check     # check once, print new listings instead of sending them
+make watch     # check forever
 ```
 
 Settings live in `config/settings.toml` (`search.max_price`, `search.min_rooms`, `watch.interval_minutes`) and can be
@@ -76,6 +81,7 @@ overridden with `HOUSE_FINDER_` environment variables, for example `HOUSE_FINDER
 ## Development
 
 ```bash
+make help     # List every command
 make test     # Run tests
 make lint     # Run every pre-commit check
 ```

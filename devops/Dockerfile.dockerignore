@@ -8,5 +8,4 @@
 !README.md
 
 # Files used in the Dockerfile
-!.bin/runtime_host_user_entrypoint.sh
 !config/settings.toml
